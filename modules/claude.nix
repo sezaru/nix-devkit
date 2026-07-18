@@ -88,21 +88,25 @@ in {
     };
   };
 
-  config = mkIf cfg.enable {
-    packages =
-      [pkgs.claude-code pkgs.ast-grep pkgs.bubblewrap customPackages.claude-agent-acp]
-      ++ optionals cfg.postgres.enable [postgres-mcp]
-      ++ optionals cfg.mempalace.enable [customPackages.mempalace];
+  config = mkIf cfg.enable (mkMerge [
+    {
+      packages =
+        [pkgs.claude-code pkgs.ast-grep pkgs.bubblewrap customPackages.claude-agent-acp]
+        ++ optionals cfg.postgres.enable [postgres-mcp]
+        ++ optionals cfg.mempalace.enable [customPackages.mempalace];
 
-    env.CLAUDE_CONFIG_DIR = claude_dir;
+      env.CLAUDE_CONFIG_DIR = claude_dir;
 
-    env.HEXDOCS_MCP_PATH = mkIf cfg.hexdocs.enable hexdocs_dir;
-    env.HEXDOCS_MCP_MIX_PROJECT_PATHS = mkIf cfg.hexdocs.enable root_dir;
+      env.TIDEWAVE_CLAUDE_AGENT_ACP_EXECUTABLE = "${customPackages.claude-agent-acp}/bin/claude-agent-acp";
+    }
 
-    env.TIDEWAVE_CLAUDE_AGENT_ACP_EXECUTABLE = "${customPackages.claude-agent-acp}/bin/claude-agent-acp";
+    (mkIf cfg.hexdocs.enable {
+      env.HEXDOCS_MCP_PATH = hexdocs_dir;
+      env.HEXDOCS_MCP_MIX_PROJECT_PATHS = root_dir;
 
-    modules.node = mkIf cfg.hexdocs.enable {
-      enable = mkForce true;
-    };
-  };
+      modules.node = {
+        enable = mkForce true;
+      };
+    })
+  ]);
 }
