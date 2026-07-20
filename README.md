@@ -16,6 +16,7 @@ nothing until you flip the flags you want.
 | elixir | `modules.elixir.enable` | Elixir + Erlang (version options), Phoenix deps, optional Expert LSP |
 | node | `modules.node.enable` | Node + npm, optional TypeScript, prettier |
 | rust | `modules.rust.enable` | Rust toolchain + Tauri GUI system libs |
+| postgresql | `modules.postgresql.enable` | postgres service (`pg`/`pg_log` scripts, `--locale=C`, extensions fn) |
 | tidewave | `modules.tidewave.enable` | tidewave CLI |
 | open-design | `modules.open-design.enable` | `od` daemon + web UI (repackaged, self-healing skill staging) |
 | devenv_utils | *(always on)* | `dev` wrapper script + shell banner |

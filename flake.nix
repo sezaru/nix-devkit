@@ -38,6 +38,7 @@
         ./modules/elixir.nix
         ./modules/node.nix
         ./modules/open_design.nix
+        ./modules/postgresql.nix
         ./modules/rust.nix
         ./modules/tidewave.nix
       ];
