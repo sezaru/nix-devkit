@@ -8,6 +8,23 @@ with lib; let
   state_dir = config.env.DEVENV_STATE;
 
   cfg = config.modules.postgresql;
+
+  pg_textsearch = pkgs.callPackage ../packages/pg_textsearch.nix {
+    postgresql = cfg.package;
+  };
+
+  wrappedExtensions =
+    if cfg.pg_textsearch.enable
+    then (
+      exts: let
+        base =
+          if cfg.extensions == null
+          then []
+          else cfg.extensions exts;
+      in
+        base ++ [pg_textsearch]
+    )
+    else cfg.extensions;
 in {
   options = {
     modules.postgresql = {
@@ -38,6 +55,8 @@ in {
         '';
         description = "Additional PostgreSQL extensions to install";
       };
+
+      pg_textsearch.enable = mkEnableOption "Enable pg_textsearch extension (BM25 full-text search)";
 
       defaultDatabase = mkOption {
         type = types.nullOr types.str;
@@ -82,7 +101,7 @@ in {
 
       package = cfg.package;
 
-      extensions = cfg.extensions;
+      extensions = wrappedExtensions;
 
       initdbArgs = [
         "--locale=C"

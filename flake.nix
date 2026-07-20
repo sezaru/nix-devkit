@@ -33,9 +33,11 @@
     # declare those transitive inputs itself, so versions live here only.
     devenvModule = {...}: {
       imports = [
+        ./modules/aws.nix
         ./modules/claude.nix
         ./modules/devenv_utils.nix
         ./modules/elixir.nix
+        ./modules/gemini.nix
         ./modules/node.nix
         ./modules/open_design.nix
         ./modules/postgresql.nix

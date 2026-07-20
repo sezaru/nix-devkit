@@ -39,6 +39,10 @@ in {
         enable = mkEnableOption "Enable phoenix development";
       };
 
+      ash = {
+        enable = mkEnableOption "Enable Ash development (adds mermaid-cli for diagrams)";
+      };
+
       lsp = {
         enable = mkEnableOption "Enable Expert LSP";
       };
@@ -46,7 +50,11 @@ in {
   };
 
   config = mkIf cfg.enable {
-    packages = (lists.optionals cfg.phoenix.enable [pkgs.watchman pkgs.inotify-tools]) ++ (lists.optionals cfg.lsp.enable [pkgs.emacs-lsp-booster expert]) ++ [cfg.package cfg.erlang.package pkgs.wxGTK33];
+    packages =
+      (lists.optionals cfg.phoenix.enable [pkgs.watchman pkgs.inotify-tools])
+      ++ (lists.optionals cfg.ash.enable [pkgs.mermaid-cli])
+      ++ (lists.optionals cfg.lsp.enable [pkgs.emacs-lsp-booster expert])
+      ++ [cfg.package cfg.erlang.package pkgs.wxGTK33];
 
     env.ERL_AFLAGS = "-kernel shell_history enabled -kernel shell_history_path '\"${state_dir}/erlang-history\"'";
 
