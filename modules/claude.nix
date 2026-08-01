@@ -91,7 +91,8 @@ in {
   config = mkIf cfg.enable (mkMerge [
     {
       packages =
-        [pkgs.claude-code pkgs.ast-grep pkgs.bubblewrap customPackages.claude-agent-acp]
+        # jq is used by the Claude PreToolUse log-guard hook (.claude/hooks).
+        [pkgs.claude-code pkgs.ast-grep pkgs.bubblewrap pkgs.jq customPackages.claude-agent-acp]
         ++ optionals cfg.postgres.enable [postgres-mcp]
         ++ optionals cfg.mempalace.enable [customPackages.mempalace];
 

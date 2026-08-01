@@ -4,6 +4,11 @@
   inputs = {
     nixpkgs.url = "github:cachix/devenv-nixpkgs/rolling";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-25.11";
+    # Dedicated input just for the Flutter SDK: nixos-25.11 tops out at Flutter
+    # v3_38 (Dart 3.10.1), but lib_llama_cpp (on-device GGUF VLM) needs Dart
+    # >=3.11.5. nixos-unstable ships Flutter v3_44 (Dart 3.12.2). Kept separate so
+    # the rest of the toolchain (Android SDK/NDK) stays on the pinned 25.11.
+    nixpkgs-flutter.url = "github:nixos/nixpkgs/nixos-unstable";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -37,6 +42,7 @@
         ./modules/claude.nix
         ./modules/devenv_utils.nix
         ./modules/elixir.nix
+        ./modules/flutter.nix
         ./modules/gemini.nix
         ./modules/node.nix
         ./modules/open_design.nix
