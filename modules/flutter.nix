@@ -53,6 +53,17 @@ with lib; let
     else "arm64-v8a";
   systemImageId = "system-images;android-${cfg.android.apiLevel};${cfg.android.systemImageType};${emulatorAbi}";
 
+  # Google ships the emulator host binary only for x86_64-linux — there is no
+  # aarch64-linux archive in the SDK repo, so the androidenv emulator derivation
+  # dies in unpackPhase ("did not have any sources available for os=linux,
+  # arch=aarch64"). meta.available is misleadingly true, so it only surfaces at
+  # build time. Force the emulator off on non-x86 hosts regardless of the option;
+  # on aarch64 use a physical device via adb. Warn only when explicitly requested.
+  emulatorEnabled =
+    cfg.android.emulator.enable
+    && (isX86
+      || warn "modules.flutter.android.emulator: no aarch64-linux Android emulator exists; disabling it on ${pkgs.stdenv.hostPlatform.system} (attach a physical device via adb)." false);
+
   android_sdk_raw =
     (pkgs-unstable.androidenv.composeAndroidPackages {
       # Some plugins (e.g. path_provider_android / jni) pin build-tools 35.0.0,
@@ -72,8 +83,8 @@ with lib; let
       # The jni plugin compiles native C++ via CMake, which AGP would otherwise
       # try to auto-install into the read-only store.
       cmakeVersions = [cfg.android.cmakeVersion];
-      includeEmulator = cfg.android.emulator.enable;
-      includeSystemImages = cfg.android.emulator.enable;
+      includeEmulator = emulatorEnabled;
+      includeSystemImages = emulatorEnabled;
       systemImageTypes = [cfg.android.systemImageType];
       abiVersions = [emulatorAbi];
       # accept_license (set on the pkgs-unstable import) covers android-sdk-license;
@@ -347,7 +358,7 @@ in {
 
         emulator = {
           enable =
-            mkEnableOption "Android emulator + system images (requires KVM on x86_64)"
+            mkEnableOption "Android emulator + system images (x86_64 hosts only, needs KVM; auto-disabled on aarch64 — no emulator binary exists there)"
             // {default = true;};
         };
 
@@ -406,7 +417,7 @@ in {
     (mkIf (cfg.enable && cfg.android.enable) {
       packages =
         [android_sdk cfg.android.jdk]
-        ++ optionals cfg.android.emulator.enable [avd-create avd-run];
+        ++ optionals emulatorEnabled [avd-create avd-run];
 
       env.ANDROID_HOME = android_sdk_root;
       env.ANDROID_SDK_ROOT = android_sdk_root;
