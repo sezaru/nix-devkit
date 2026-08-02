@@ -44,6 +44,7 @@
         ./modules/elixir.nix
         ./modules/flutter.nix
         ./modules/gemini.nix
+        ./modules/gleam.nix
         ./modules/node.nix
         ./modules/open_design.nix
         ./modules/postgresql.nix
