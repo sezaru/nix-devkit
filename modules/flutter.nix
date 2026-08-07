@@ -163,6 +163,19 @@ with lib; let
         --device "${cfg.android.device}" \
         --force
     fi
+
+    # avdmanager writes `hw.keyboard = no`, which disables host-keyboard
+    # passthrough — physical-keyboard keystrokes never reach the guest, only the
+    # on-screen keyboard works. Force it on. Applied unconditionally (not just on
+    # first create) so pre-existing AVDs get fixed on the next avd-run too.
+    cfg_ini="''${ANDROID_AVD_HOME:-${android_user_dir}/avd}/$name.avd/config.ini"
+    if [ -f "$cfg_ini" ]; then
+      if grep -q '^hw\.keyboard' "$cfg_ini"; then
+        sed -i 's/^hw\.keyboard *=.*/hw.keyboard = yes/' "$cfg_ini"
+      else
+        echo 'hw.keyboard = yes' >> "$cfg_ini"
+      fi
+    fi
   '';
 
   # Boot the emulator. Ensures the AVD exists first.
@@ -178,6 +191,11 @@ with lib; let
     # Wayland socket so Qt can't auto-detect and re-pick it.
     export QT_QPA_PLATFORM=xcb
     unset WAYLAND_DISPLAY
+    # Qt >= 6.5 (the emulator bundles 6.5+) loads the xcb platform plugin only if
+    # libxcb-cursor is present ("xcb-cursor0 or libxcb-cursor0 is needed to load
+    # the Qt xcb platform plugin"); it is not in the emulator's bundled lib dir nor
+    # on NixOS's default loader path, so the plugin init aborts. Put it on the path.
+    export LD_LIBRARY_PATH="${pkgs.xorg.xcbutilcursor}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     # Scope HOME so the emulator's own adbkey gen + ~/.android writes stay in the
     # state dir, matching the wrapped adb binary.
     export HOME="${android_home_dir}"
