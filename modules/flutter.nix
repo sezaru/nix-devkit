@@ -358,8 +358,28 @@ in {
 
         systemImageType = mkOption {
           type = types.str;
-          default = "google_apis";
-          description = "System image type (google_apis, google_apis_playstore, default)";
+          default = "google_apis_playstore";
+          description = ''
+            System image type. Defaults to google_apis_playstore — the fullest
+            "real phone" image: Google Play services (GMS) PLUS the Play Store
+            app, Google Play Billing, and the Google account manager. Needed by
+            apps that hard-require Billing at startup (e.g. RevenueCat-backed
+            ones), which a plain google_apis image can't provide.
+
+            Options (availability varies by apiLevel/abi):
+              - google_apis_playstore : GMS + Play Store + Billing (default)
+              - google_apis           : GMS only, no Play Store / Billing
+              - default               : AOSP, no Google services at all
+
+            Trade-off: Play Store images are production ("user") builds, so
+            `adb root` is disabled. `run-as <pkg>` still works for debuggable
+            builds, so pulling a debug app's internal DB/files is unaffected. To
+            fully activate Play/Billing, sign into a Google account in the AVD.
+
+            Note: on-device Google AI (Gemini Nano via AICore / ML Kit GenAI) is
+            NOT provided by any emulator system image — AICore ships only on
+            specific physical devices — so it cannot be enabled here.
+          '';
         };
 
         device = mkOption {
