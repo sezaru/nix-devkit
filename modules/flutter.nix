@@ -77,7 +77,7 @@ with lib; let
       # compileSdkVersion 33, so Gradle needs platform android-33 — which it can't
       # auto-install into the read-only Nix SDK. (It pins no buildToolsVersion, so
       # the app's build-tools are reused; only the platform must be provisioned.)
-      platformVersions = unique (["33" "34" "35"] ++ [cfg.android.apiLevel]);
+      platformVersions = unique (["33" "34" "35"] ++ [cfg.android.apiLevel] ++ optional cfg.android.emulator.rooted.enable cfg.android.emulator.rooted.apiLevel);
       includeNDK = true;
       ndkVersions = [cfg.android.ndkVersion];
       # The jni plugin compiles native C++ via CMake, which AGP would otherwise
@@ -195,7 +195,7 @@ with lib; let
     # libxcb-cursor is present ("xcb-cursor0 or libxcb-cursor0 is needed to load
     # the Qt xcb platform plugin"); it is not in the emulator's bundled lib dir nor
     # on NixOS's default loader path, so the plugin init aborts. Put it on the path.
-    export LD_LIBRARY_PATH="${pkgs.xorg.xcbutilcursor}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    export LD_LIBRARY_PATH="${pkgs.libxcb-cursor}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     # Scope HOME so the emulator's own adbkey gen + ~/.android writes stay in the
     # state dir, matching the wrapped adb binary.
     export HOME="${android_home_dir}"
@@ -222,6 +222,122 @@ with lib; let
       *" -gpu "*) exec emulator -avd "$name" "$@" ;;
       *) exec emulator -avd "$name" -gpu host "$@" ;;
     esac
+  '';
+
+  # ── Rooted emulator (Magisk, systemless) ────────────────────────────────────
+  # A companion AVD whose ramdisk is Magisk-patched at BUILD TIME. magiskboot is
+  # a static Android binary that hangs on the glibc host, so magisk-ramdisk-patch.py
+  # reimplements its ramdisk cpio transform with plain host tools (lz4-legacy +
+  # concatenated-cpio + inject magiskinit/overlay.d/.backup). The output is an
+  # ordinary read-only store artifact the emulator boots via `-ramdisk` — no
+  # writable-copy dance, no on-device patch step. Validated on API 33 + Magisk
+  # 25.2 (newer Magisk changed the ramdisk layout the patcher expects).
+  cfgRoot = cfg.android.emulator.rooted;
+
+  magiskApk = pkgs.fetchurl {
+    url = "https://github.com/topjohnwu/Magisk/releases/download/v${cfgRoot.magiskVersion}/Magisk-v${cfgRoot.magiskVersion}.apk";
+    hash = cfgRoot.magiskHash;
+  };
+
+  rootedSystemImageId = "system-images;android-${cfgRoot.apiLevel};${cfg.android.systemImageType};${emulatorAbi}";
+
+  rootedRamdisk = pkgs.runCommand "magisk-rooted-ramdisk-api${cfgRoot.apiLevel}" {
+    nativeBuildInputs = [pkgs.lz4 pkgs.python3 pkgs.unzip];
+  } ''
+    python3 ${./magisk-ramdisk-patch.py} \
+      ${android_sdk_raw}/libexec/android-sdk/system-images/android-${cfgRoot.apiLevel}/${cfg.android.systemImageType}/${emulatorAbi}/ramdisk.img \
+      ${magiskApk} "$out"
+  '';
+
+  # Boot the rooted AVD, creating it on the rooted-API image first if needed
+  # (avd-run's own avd-create targets the main apiLevel image, so create here and
+  # avd-run then just boots). Post-boot: install the Magisk app and persist an
+  # "allow" su policy for the adb shell. A fully baked zero-tap seed isn't
+  # possible — MagiskSU's DB write needs the full u:r:magisk:s0 (su) domain, but a
+  # boot service running `magisk` lands in the restricted u:r:magisk_client:s0
+  # domain (SELinux blocks it). So on a BRAND-NEW AVD the first su shows one Grant
+  # prompt in the emulator; this write then makes it stick. On an existing AVD
+  # it's a silent no-op → turnkey.
+  rooted-emulator = pkgs.writeShellScriptBin "rooted-emulator" ''
+    set -euo pipefail
+    name="''${1:-${cfgRoot.avdName}}"
+    if ! avdmanager list avd 2>/dev/null | grep -q "Name: $name"; then
+      echo "Creating rooted AVD '$name' (${rootedSystemImageId}, device=${cfg.android.device})"
+      echo "no" | avdmanager create avd --name "$name" --package "${rootedSystemImageId}" --device "${cfg.android.device}" --force
+      cfg_ini="''${ANDROID_AVD_HOME:-${android_user_dir}/avd}/$name.avd/config.ini"
+      if [ -f "$cfg_ini" ]; then
+        if grep -q '^hw\.keyboard' "$cfg_ini"; then
+          sed -i 's/^hw\.keyboard *=.*/hw.keyboard = yes/' "$cfg_ini"
+        else
+          echo 'hw.keyboard = yes' >> "$cfg_ini"
+        fi
+      fi
+    fi
+    ( adb wait-for-device
+      until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do sleep 2; done
+      adb install -r ${magiskApk} >/dev/null 2>&1 || true
+      adb shell su -c 'magisk --sqlite "REPLACE INTO policies (uid,policy,until,logging,notification) VALUES(2000,2,0,1,1)"' >/dev/null 2>&1 || true
+    ) &
+    exec ${avd-run}/bin/avd-run "$name" -ramdisk ${rootedRamdisk} -no-snapshot-load
+  '';
+
+  # Copy an installed app's private data (/data/data/<pkg>) off a rooted
+  # emulator/device into ./<pkg>/. Prompts for the package if not given; refuses
+  # to overwrite; stages the transfer archive in a temp dir removed on exit.
+  adb-pull-app-data = pkgs.writeShellScriptBin "adb-pull-app-data" ''
+    set -euo pipefail
+
+    pkg="''${1:-}"
+    if [ -z "$pkg" ]; then
+      printf 'App package name: '
+      read -r pkg
+    fi
+    [ -n "$pkg" ] || { echo "error: no package name given" >&2; exit 1; }
+
+    dest="./$pkg"
+    if [ -e "$dest" ]; then
+      echo "error: '$dest' already exists — refusing to overwrite" >&2
+      exit 1
+    fi
+
+    if ! adb get-state >/dev/null 2>&1; then
+      echo "error: no adb device connected" >&2; exit 1
+    fi
+    # Capture output before matching — piping into `grep -q` under `pipefail`
+    # makes grep close the pipe on first match, adb gets SIGPIPE, pipeline "fails".
+    id_out="$(adb shell su -c id 2>/dev/null || true)"
+    case "$id_out" in
+      *uid=0*) ;;
+      *) echo "error: root not available (adb shell su failed) — is this the rooted AVD?" >&2; exit 1 ;;
+    esac
+    pkg_list="$(adb shell pm list packages 2>/dev/null | tr -d '\r')"
+    if ! grep -qx "package:$pkg" <<<"$pkg_list"; then
+      echo "error: package '$pkg' is not installed on the device" >&2; exit 1
+    fi
+
+    tmp="$(mktemp -d)"
+    host_tgz="$tmp/$pkg.tgz"
+    dev_tgz="/data/local/tmp/adb-pull-app-data.$$.tgz"
+    cleanup() {
+      rm -rf "$tmp"
+      adb shell su -c "rm -f '$dev_tgz'" >/dev/null 2>&1 || true
+    }
+    trap cleanup EXIT
+
+    echo "archiving /data/data/$pkg on device (as root)..."
+    # Root writes the archive to a device file (never stream binary through the su
+    # PTY — it corrupts it), make it readable, then adb pull (binary-clean).
+    adb exec-out su -c "tar -c -C /data/data '$pkg' 2>/dev/null | gzip > '$dev_tgz'; chmod 644 '$dev_tgz'"
+
+    echo "pulling..."
+    adb pull "$dev_tgz" "$host_tgz" >/dev/null
+
+    echo "verifying + extracting..."
+    gzip -t "$host_tgz"
+    tar -xzf "$host_tgz" -C .
+
+    echo "done → $dest"
+    du -sh "$dest"
   '';
 
   # The `flutter` shim. Besides HOME-scoping, it makes `flutter run` IMPOSSIBLE to
@@ -398,6 +514,46 @@ in {
           enable =
             mkEnableOption "Android emulator + system images (x86_64 hosts only, needs KVM; auto-disabled on aarch64 — no emulator binary exists there)"
             // {default = true;};
+
+          rooted = {
+            enable = mkEnableOption ''
+              a Magisk-rooted companion AVD. Adds the `rooted-emulator` command
+              (boots an AVD whose ramdisk is Magisk-patched at build time) and
+              `adb-pull-app-data` (copy an app's private /data/data off it). Lets
+              you inspect another app's private data — `adb root` is unavailable on
+              the Play Store images and `run-as` only works for debuggable apps.
+            '';
+
+            apiLevel = mkOption {
+              type = types.str;
+              default = "33";
+              description = ''
+                Android API level for the rooted image. Defaults to 33 (Android 13),
+                the level validated with the pinned Magisk. Newer Magisk changed the
+                ramdisk layout the build-time patcher reimplements, so bumping this
+                generally also means bumping magiskVersion + magiskHash and
+                re-validating a boot.
+              '';
+            };
+
+            avdName = mkOption {
+              type = types.str;
+              default = "root33";
+              description = "Name of the rooted AVD created/booted by rooted-emulator";
+            };
+
+            magiskVersion = mkOption {
+              type = types.str;
+              default = "25.2";
+              description = "Magisk release to patch into the ramdisk";
+            };
+
+            magiskHash = mkOption {
+              type = types.str;
+              default = "sha256-C9wykYtupQLcp2mxxwiSANpR6h3vFwgkwoEpJbQm1Qk=";
+              description = "SRI hash of Magisk-v<magiskVersion>.apk from the GitHub release";
+            };
+          };
         };
 
         jdk = mkOption {
@@ -455,7 +611,8 @@ in {
     (mkIf (cfg.enable && cfg.android.enable) {
       packages =
         [android_sdk cfg.android.jdk]
-        ++ optionals emulatorEnabled [avd-create avd-run];
+        ++ optionals emulatorEnabled [avd-create avd-run]
+        ++ optionals (emulatorEnabled && cfgRoot.enable) [rooted-emulator adb-pull-app-data];
 
       env.ANDROID_HOME = android_sdk_root;
       env.ANDROID_SDK_ROOT = android_sdk_root;
