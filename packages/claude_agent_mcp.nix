@@ -7,16 +7,16 @@
   autoPatchelfHook,
   nghttp2,
 }: let
-  version = "0.55.0";
-  packageHash = "sha256-HVhXJJshq41qMqyaxWkNi//TeZUp+PZwKnppJ1lYaIw=";
-  depsHash = "sha256-rfBlKdsr3YaBi8eQ40hov2B71pg7zL57WV4oX4z+SAU=";
+  version = "0.66.0";
+  packageHash = "sha256-B6oB0xrDHFm46YfgTc/VlxPjHhCdSNlriq1zGe6XyU4=";
+  depsHash = "sha256-7c9+Q+HkoUeL38EzEbu+KePA/aN+If9tGr7C/lWluhU=";
 in
   buildNpmPackage (finalAttrs: {
     pname = "claude-agent-acp";
     version = version;
 
     src = fetchFromGitHub {
-      owner = "zed-industries";
+      owner = "agentclientprotocol";
       repo = "claude-agent-acp";
       tag = "v${finalAttrs.version}";
       hash = packageHash;
