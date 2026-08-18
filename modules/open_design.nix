@@ -15,7 +15,8 @@ in {
   };
 
   config = mkIf cfg.enable {
-    packages = [open-design];
+    # zenity backs the native folder picker used by the Open Design web UI
+    packages = [open-design pkgs.zenity];
 
     # od defaults its data dir to <install>/.od, which is the read-only Nix
     # store path and crashes on first mkdir. Redirect to a writable,
