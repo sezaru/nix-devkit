@@ -7,9 +7,9 @@
   autoPatchelfHook,
   nghttp2,
 }: let
-  version = "0.66.0";
-  packageHash = "sha256-B6oB0xrDHFm46YfgTc/VlxPjHhCdSNlriq1zGe6XyU4=";
-  depsHash = "sha256-7c9+Q+HkoUeL38EzEbu+KePA/aN+If9tGr7C/lWluhU=";
+  version = "0.70.0";
+  packageHash = "sha256-g7yg+rg1OzIg+8drikA8JoraOzrF/F4kD4dJfXAqlWY=";
+  depsHash = "sha256-cgRQM/G/zGoanY73E6pQxpCN6IyIidGh8nR3KMITdfY=";
 in
   buildNpmPackage (finalAttrs: {
     pname = "claude-agent-acp";

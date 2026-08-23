@@ -9,9 +9,9 @@
   claude-agent-acp,
   ...
 }: let
-  version = "0.4.4";
-  packageHash = "sha256-BR7+M+sWpsXMwdTMgvci/wRAjwT54KJhP67ahfMQZfg=";
-  cargoHash = "sha256-JKoAkKx3W257Py5m6wrBdFC88Di8irs7iQ4C10xbVCo=";
+  version = "0.4.6";
+  packageHash = "sha256-UvoCdw3VqgSOTfj7TXZAz+4v2AKrYsio6tn7fs6Bghg=";
+  cargoHash = "sha256-zhfr7jlniggIdZLrHEdExRfDat66k6grRkojA9h5ypE=";
 
   src = pkgs.applyPatches {
     nativeBuildInputs = [pkgs.perl];
