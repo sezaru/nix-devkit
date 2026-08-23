@@ -12,12 +12,14 @@ nothing until you flip the flags you want.
 
 | Module | Enable flag | Provides |
 | --- | --- | --- |
+| android | `modules.android.enable` | Android CLI SDK + NDK/CMake, HOME-scoped `adb`, emulator with the NixOS GL/Qt env baked into the binary (`avd-create`/`avd-run`), optional Magisk-rooted AVD |
 | claude | `modules.claude.enable` | Claude Code, ast-grep, bubblewrap, claude-agent-acp; optional hexdocs / postgres / mempalace MCP |
 | elixir | `modules.elixir.enable` | Elixir + Erlang (version options), Phoenix deps, optional Expert LSP |
-| flutter | `modules.flutter.enable` | Flutter SDK (v3_44, scoped HOME/XDG), optional Android CLI SDK + NDK/CMake/emulator, `flutter run` auto-backgrounding shim, optional Playwright MCP + agent skills |
+| flutter | `modules.flutter.enable` | Flutter SDK (v3_44, scoped HOME/XDG), `flutter run` auto-backgrounding shim, optional Playwright MCP + agent skills. Pair with `modules.android` for a device build. |
 | node | `modules.node.enable` | Node + npm, optional TypeScript, prettier |
 | rust | `modules.rust.enable` | Rust toolchain + Tauri GUI system libs |
 | postgresql | `modules.postgresql.enable` | postgres service (`pg`/`pg_log` scripts, `--locale=C`, extensions fn) |
+| secretspec | `modules.secretspec.enable` | `secretspec` (0.17) + `sops` CLIs; auto-loads `secretspec.toml` secrets into the shell env (profile-selectable via `SECRETSPEC_PROFILE`) |
 | tidewave | `modules.tidewave.enable` | tidewave CLI |
 | open-design | `modules.open-design.enable` | `od` daemon + web UI (repackaged, self-healing skill staging) |
 | devenv_utils | *(always on)* | `dev` wrapper script + shell banner |

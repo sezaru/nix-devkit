@@ -10,6 +10,12 @@
     # the rest of the toolchain (Android SDK/NDK) stays on the pinned 25.11.
     nixpkgs-flutter.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # Dedicated input for secretspec: the sops:// provider needs secretspec
+    # >=0.17, but pinned nixos-25.11 only has 0.16 and devenv-nixpkgs rolling
+    # has 0.10. nixos-unstable ships 0.17.0. Kept separate from nixpkgs-flutter
+    # so the two channels can move independently.
+    nixpkgs-secretspec.url = "github:nixos/nixpkgs/nixos-unstable";
+
     flake-utils.url = "github:numtide/flake-utils";
 
     expert.url = "github:elixir-lang/expert";
@@ -38,6 +44,7 @@
     # declare those transitive inputs itself, so versions live here only.
     devenvModule = {...}: {
       imports = [
+        ./modules/android.nix
         ./modules/aws.nix
         ./modules/claude.nix
         ./modules/devenv_utils.nix
@@ -49,6 +56,7 @@
         ./modules/open_design.nix
         ./modules/postgresql.nix
         ./modules/rust.nix
+        ./modules/secretspec.nix
         ./modules/tidewave.nix
       ];
 
@@ -64,6 +72,7 @@
         inherit system;
         config.allowUnfree = true;
       };
+
     in {
       packages = import ./packages {inherit pkgs pkgs-unstable inputs;};
     }))
