@@ -99,6 +99,25 @@ in {
       env.CLAUDE_CONFIG_DIR = claude_dir;
 
       env.TIDEWAVE_CLAUDE_AGENT_ACP_EXECUTABLE = "${customPackages.claude-agent-acp}/bin/claude-agent-acp";
+
+      # Force-enable the "Fable" model in the `/model` picker (CLI + agent-shell).
+      # Fable is gated by a server-side rollout that fills
+      # `additionalModelOptionsCache` in .claude.json; config dirs bucketed out of
+      # the rollout never get it (varies per project despite the same account).
+      # Seed the entry ourselves. Idempotent, and the cache is sticky (Claude's
+      # fetch never clears it). The `value` is what the picker keys on; the
+      # label/description are cosmetic. Only patches an existing file, so a fresh
+      # project shows Fable from the second shell entry onward.
+      enterShell = ''
+        if [ -f "${claude_dir}/.claude.json" ] && command -v jq >/dev/null 2>&1; then
+          _tmp=$(mktemp)
+          if jq '.additionalModelOptionsCache = ((.additionalModelOptionsCache // []) | if any(.value == "claude-fable-5[1m]") then . else . + [{"value":"claude-fable-5[1m]","label":"Fable","description":"Fable 5 · Most capable for your hardest and longest-running tasks"}] end)' "${claude_dir}/.claude.json" > "$_tmp" 2>/dev/null; then
+            mv "$_tmp" "${claude_dir}/.claude.json"
+          else
+            rm -f "$_tmp"
+          fi
+        fi
+      '';
     }
 
     (mkIf cfg.hexdocs.enable {
