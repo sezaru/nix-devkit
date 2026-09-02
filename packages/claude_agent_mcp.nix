@@ -7,9 +7,9 @@
   autoPatchelfHook,
   nghttp2,
 }: let
-  version = "0.70.0";
-  packageHash = "sha256-g7yg+rg1OzIg+8drikA8JoraOzrF/F4kD4dJfXAqlWY=";
-  depsHash = "sha256-cgRQM/G/zGoanY73E6pQxpCN6IyIidGh8nR3KMITdfY=";
+  version = "0.73.0";
+  packageHash = "sha256-xTz0h6Hm5LcIbigz7fNZy1GnabHcHkTSHgCiZSHesIM=";
+  depsHash = "sha256-zoTjK8ITPhslMCSQpXCx/cA5f5BGw1KEvLbIXi7QI5k=";
 in
   buildNpmPackage (finalAttrs: {
     pname = "claude-agent-acp";
@@ -29,6 +29,12 @@ in
     buildInputs = [stdenv.cc.cc.lib];
 
     postInstall = ''
+      # 0.73.0 bundles both glibc and musl prebuilt SDK binaries. Our hosts are
+      # glibc-only (Node loads the -gnu variant at runtime), and autoPatchelf
+      # can't satisfy the musl binary's libc.musl-*.so.1 — drop the unused musl
+      # variants before the fixup phase patches them.
+      find $out -type d -name 'claude-agent-sdk-*-musl' -exec rm -rf {} +
+
       wrapProgram $out/bin/claude-agent-acp \
         --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [nghttp2.lib]}
     '';
