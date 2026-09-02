@@ -14,6 +14,14 @@ with lib; let
 
   customPackages = flakeInputs.self.packages.${pkgs.stdenv.system};
 
+  # Bump the Claude Code CLI ahead of nixpkgs so the `/model` picker offers
+  # Fable 5.1 (claude-fable-5-1), which the pinned nixpkgs version predates.
+  # Manifest = the upstream release manifest (version + per-platform checksums)
+  # from downloads.claude.ai; refresh packages/claude-code-manifest.json to bump.
+  claude-code = pkgs.claude-code.override {
+    manifest = lib.importJSON ../packages/claude-code-manifest.json;
+  };
+
   cfg = config.modules.claude;
 
   pg = cfg.postgres;
@@ -92,7 +100,7 @@ in {
     {
       packages =
         # jq is used by the Claude PreToolUse log-guard hook (.claude/hooks).
-        [pkgs.claude-code pkgs.ast-grep pkgs.bubblewrap pkgs.jq customPackages.claude-agent-acp]
+        [claude-code pkgs.ast-grep pkgs.bubblewrap pkgs.jq customPackages.claude-agent-acp]
         ++ optionals cfg.postgres.enable [postgres-mcp]
         ++ optionals cfg.mempalace.enable [customPackages.mempalace];
 
@@ -100,18 +108,23 @@ in {
 
       env.TIDEWAVE_CLAUDE_AGENT_ACP_EXECUTABLE = "${customPackages.claude-agent-acp}/bin/claude-agent-acp";
 
-      # Force-enable the "Fable" model in the `/model` picker (CLI + agent-shell).
+      # Force-enable the Fable models in the `/model` picker (CLI + agent-shell).
       # Fable is gated by a server-side rollout that fills
       # `additionalModelOptionsCache` in .claude.json; config dirs bucketed out of
       # the rollout never get it (varies per project despite the same account).
-      # Seed the entry ourselves. Idempotent, and the cache is sticky (Claude's
-      # fetch never clears it). The `value` is what the picker keys on; the
-      # label/description are cosmetic. Only patches an existing file, so a fresh
-      # project shows Fable from the second shell entry onward.
+      # Seed the entries ourselves. Idempotent, and the cache is sticky (Claude's
+      # fetch never clears it). The `value` is what the picker keys on and must be
+      # a model id the running binary knows: Fable 5.1 (claude-fable-5-1) needs
+      # claude-code >= 2.1.250 (see the manifest override above) and the latest
+      # claude-agent-acp; the current acp (0.73.0) only surfaces 5.0 in the picker.
+      # Only patches an existing file, so a fresh project seeds from the second
+      # shell entry onward.
       enterShell = ''
         if [ -f "${claude_dir}/.claude.json" ] && command -v jq >/dev/null 2>&1; then
           _tmp=$(mktemp)
-          if jq '.additionalModelOptionsCache = ((.additionalModelOptionsCache // []) | if any(.value == "claude-fable-5[1m]") then . else . + [{"value":"claude-fable-5[1m]","label":"Fable","description":"Fable 5 · Most capable for your hardest and longest-running tasks"}] end)' "${claude_dir}/.claude.json" > "$_tmp" 2>/dev/null; then
+          if jq '.additionalModelOptionsCache = ((.additionalModelOptionsCache // [])
+                   | (if any(.value == "claude-fable-5[1m]") then . else . + [{"value":"claude-fable-5[1m]","label":"Fable 5","description":"Fable 5 · Most capable for your hardest and longest-running tasks"}] end)
+                   | (if any(.value == "claude-fable-5-1") then . else . + [{"value":"claude-fable-5-1","label":"Fable 5.1","description":"Fable 5.1 · Most capable for your hardest and longest-running tasks"}] end))' "${claude_dir}/.claude.json" > "$_tmp" 2>/dev/null; then
             mv "$_tmp" "${claude_dir}/.claude.json"
           else
             rm -f "$_tmp"
