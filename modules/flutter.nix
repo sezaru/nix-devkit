@@ -11,9 +11,14 @@ with lib; let
   # GGUF VLM. Flutter 3.44.2 targets the same NDK 28.2.13676358 / compileSdk 36 /
   # build-tools 36.0.0 that `modules.android` provisions by default, so nothing
   # else needs to move.
+  # nixos-unstable's flutter wrapper now pulls the native `aapt` (aapt2 8.13.2),
+  # whose meta.platforms is x86_64-linux + darwin only — so a bare import refuses
+  # to evaluate the Flutter SDK on aarch64-linux. Android builds run on x86 hosts
+  # anyway; aarch64 only needs the shell to instantiate, so allow it through.
   pkgs-flutter = import flakeInputs.nixpkgs-flutter {
     system = pkgs.stdenv.system;
     config.allowUnfree = true;
+    config.allowUnsupportedSystem = true;
   };
 
   state_dir = config.env.DEVENV_STATE;
