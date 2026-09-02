@@ -4,6 +4,7 @@
   inputs,
 }: let
   claude-agent-acp = pkgs.callPackage ./claude_agent_mcp.nix {};
+  openDesign = import ./open_design {inherit pkgs pkgs-unstable inputs;};
 in {
   inherit claude-agent-acp;
 
@@ -13,5 +14,9 @@ in {
 
   mempalace = pkgs-unstable.callPackage ./mempalace.nix {};
 
-  open-design = import ./open_design.nix {inherit pkgs pkgs-unstable inputs;};
+  open-design = openDesign.od;
+  # daemon/web exposed so `nixupdate` can rebuild each with a fakeHash to
+  # regenerate its pnpm-deps hash after an input bump.
+  open-design-daemon = openDesign.daemon;
+  open-design-web = openDesign.web;
 }

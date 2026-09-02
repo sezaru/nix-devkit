@@ -19,7 +19,16 @@
     flake-utils.url = "github:numtide/flake-utils";
 
     expert.url = "github:elixir-lang/expert";
-    open-design.url = "github:nexu-io/open-design";
+    # Source-only (flake = false): upstream retired its own flake.nix in #7644
+    # (2026-08-31, "retire official Nix distribution"), so HEAD is no longer a
+    # flake. We vendor the packaging (packages/open_design/) and build `od`
+    # straight from this source tree, so `nix flake update` can keep advancing
+    # the rev. After a rev bump the pnpm-deps hashes go stale — `nixupdate`
+    # regenerates them.
+    open-design = {
+      url = "github:nexu-io/open-design";
+      flake = false;
+    };
   };
 
   nixConfig = {
@@ -72,7 +81,6 @@
         inherit system;
         config.allowUnfree = true;
       };
-
     in {
       packages = import ./packages {inherit pkgs pkgs-unstable inputs;};
     }))
