@@ -60,6 +60,7 @@
         ./modules/elixir.nix
         ./modules/flutter.nix
         ./modules/gemini.nix
+        ./modules/gh.nix
         ./modules/gleam.nix
         ./modules/node.nix
         ./modules/open_design.nix
