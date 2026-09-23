@@ -7,9 +7,9 @@
   autoPatchelfHook,
   nghttp2,
 }: let
-  version = "0.73.0";
-  packageHash = "sha256-xTz0h6Hm5LcIbigz7fNZy1GnabHcHkTSHgCiZSHesIM=";
-  depsHash = "sha256-zoTjK8ITPhslMCSQpXCx/cA5f5BGw1KEvLbIXi7QI5k=";
+  version = "0.81.0";
+  packageHash = "sha256-id/r62NuwdmgnBGpv+b6oG0oFsiUmRJgQUe8UQKryR0=";
+  depsHash = "sha256-yqVLSZbFb7IcW9C6caqHwREK40eK3YQdl5AR9k8dCPk=";
 in
   buildNpmPackage (finalAttrs: {
     pname = "claude-agent-acp";
@@ -29,7 +29,7 @@ in
     buildInputs = [stdenv.cc.cc.lib];
 
     postInstall = ''
-      # 0.73.0 bundles both glibc and musl prebuilt SDK binaries. Our hosts are
+      # The SDK ships both glibc and musl prebuilt binaries. Our hosts are
       # glibc-only (Node loads the -gnu variant at runtime), and autoPatchelf
       # can't satisfy the musl binary's libc.musl-*.so.1 — drop the unused musl
       # variants before the fixup phase patches them.

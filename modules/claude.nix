@@ -14,8 +14,9 @@ with lib; let
 
   customPackages = flakeInputs.self.packages.${pkgs.stdenv.system};
 
-  # Bump the Claude Code CLI ahead of nixpkgs so the `/model` picker offers
-  # Fable 5.1 (claude-fable-5-1), which the pinned nixpkgs version predates.
+  # Bump the Claude Code CLI ahead of nixpkgs so the `/model` picker offers the
+  # newest models (Fable 5.1 `claude-fable-5-1`, Opus 5.5 `claude-opus-5-5`),
+  # which the pinned nixpkgs version predates.
   # Manifest = the upstream release manifest (version + per-platform checksums)
   # from downloads.claude.ai; refresh packages/claude-code-manifest.json to bump.
   claude-code = pkgs.claude-code.override {
@@ -115,8 +116,8 @@ in {
       # Seed the entries ourselves. Idempotent, and the cache is sticky (Claude's
       # fetch never clears it). The `value` is what the picker keys on and must be
       # a model id the running binary knows: Fable 5.1 (claude-fable-5-1) needs
-      # claude-code >= 2.1.250 (see the manifest override above) and the latest
-      # claude-agent-acp; the current acp (0.73.0) only surfaces 5.0 in the picker.
+      # claude-code >= 2.1.250 (see the manifest override above) and a
+      # claude-agent-acp new enough to surface it.
       # Only patches an existing file, so a fresh project seeds from the second
       # shell entry onward.
       enterShell = ''
