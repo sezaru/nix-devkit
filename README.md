@@ -14,6 +14,7 @@ nothing until you flip the flags you want.
 | --- | --- | --- |
 | android | `modules.android.enable` | Android CLI SDK + NDK/CMake, HOME-scoped `adb`, emulator with the NixOS GL/Qt env baked into the binary (`avd-create`/`avd-run`), optional Magisk-rooted AVD |
 | claude | `modules.claude.enable` | Claude Code, ast-grep, bubblewrap, claude-agent-acp; optional hexdocs / postgres / mempalace MCP |
+| codex | `modules.codex.enable` | Codex CLI + `codex-acp` (pinned ahead of the pinned channels), `CODEX_HOME` scoped to the project, declarative plugin marketplaces and plugins, and managed hooks that skip Codex's trust review without touching the real `/etc` |
 | elixir | `modules.elixir.enable` | Elixir + Erlang (version options), Phoenix deps, optional Expert LSP |
 | flutter | `modules.flutter.enable` | Flutter SDK (v3_44, scoped HOME/XDG), `flutter run` auto-backgrounding shim, optional Playwright MCP + agent skills. Pair with `modules.android` for a device build. |
 | gh | `modules.gh.enable` | GitHub CLI with config, state and cache under `$DEVENV_STATE/gh`; auth from a token file (default: the sops-nix `github/token` secret) exported as `GH_TOKEN`, so no `gh auth login` |

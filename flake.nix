@@ -16,6 +16,14 @@
     # so the two channels can move independently.
     nixpkgs-secretspec.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # Dedicated input for Codex: the CLI ships ~weekly and the plugin/hook
+    # surface is young, so the pinned channels lag badly (devenv-nixpkgs rolling
+    # is on 0.149, nixos-25.11 older still). The plugin marketplace commands this
+    # module drives need >= 0.154. codex-acp (the ACP adapter agent-shell talks
+    # to) embeds codex-core, so it must come from the same channel or the two
+    # disagree about CODEX_HOME's on-disk layout.
+    nixpkgs-codex.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+
     flake-utils.url = "github:numtide/flake-utils";
 
     expert.url = "github:elixir-lang/expert";
@@ -56,6 +64,7 @@
         ./modules/android.nix
         ./modules/aws.nix
         ./modules/claude.nix
+        ./modules/codex.nix
         ./modules/devenv_utils.nix
         ./modules/elixir.nix
         ./modules/flutter.nix
