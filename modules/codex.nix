@@ -248,6 +248,11 @@ in {
     # CODEX_HOME does not already exist.
     enterShell = ''
       mkdir -p "${codex_dir}"
+      # Codex's only global instructions file lives in CODEX_HOME, which is per
+      # project here, so point it at the host's machine-wide agent rules.
+      if [ -e /etc/agents/AGENTS.md ] && { [ -L "${codex_dir}/AGENTS.md" ] || [ ! -e "${codex_dir}/AGENTS.md" ]; }; then
+        ln -sfn /etc/agents/AGENTS.md "${codex_dir}/AGENTS.md"
+      fi
       ${optionalString (cfg.marketplaces != [] || cfg.plugins != []) syncPlugins}
       ${optionalString managedEnabled renderManaged}
     '';
