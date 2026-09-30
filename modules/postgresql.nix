@@ -94,6 +94,14 @@ in {
           want to watch *every* query go by (`pg_log`)
         '';
 
+        connections = mkEnableOption ''
+          logging every connection and disconnection
+
+          Off by default: devenv's readiness probe alone connects every few
+          seconds, which is thousands of lines an hour before the app's own
+          connection pool adds its churn
+        '';
+
         retention = mkOption {
           type = types.enum ["hour" "day" "week"];
           default = "day";
@@ -170,8 +178,21 @@ in {
         log_min_messages = "warning";
         log_min_error_statement = "error";
         log_min_duration_statement = 100;
-        log_connections = "on";
-        log_disconnections = "on";
+
+        # Slow-query and error lines carry the bind parameters, uncapped by
+        # default: one slow bulk insert of a large blob writes all of it.
+        log_parameter_max_length = 1024;
+        log_parameter_max_length_on_error = 1024;
+
+        log_connections =
+          if cfg.log.connections
+          then "on"
+          else "off";
+
+        log_disconnections =
+          if cfg.log.connections
+          then "on"
+          else "off";
         log_timezone = "UTC";
         logging_collector = "on";
 
