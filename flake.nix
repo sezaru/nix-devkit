@@ -37,6 +37,13 @@
       url = "github:nexu-io/open-design";
       flake = false;
     };
+
+    # Source-only: the Blender Lab MCP server (mcp/) and its Blender add-on
+    # (addon/), both built by packages/blender_mcp.nix.
+    blender-mcp = {
+      url = "git+https://projects.blender.org/lab/blender_mcp.git";
+      flake = false;
+    };
   };
 
   nixConfig = {

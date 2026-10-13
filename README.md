@@ -13,7 +13,7 @@ nothing until you flip the flags you want.
 | Module | Enable flag | Provides |
 | --- | --- | --- |
 | android | `modules.android.enable` | Android CLI SDK + NDK/CMake, HOME-scoped `adb`, emulator with the NixOS GL/Qt env baked into the binary (`avd-create`/`avd-run`), optional Magisk-rooted AVD |
-| claude | `modules.claude.enable` | Claude Code, ast-grep, bubblewrap, claude-agent-acp; optional hexdocs / postgres / mempalace MCP |
+| claude | `modules.claude.enable` | Claude Code, ast-grep, bubblewrap, claude-agent-acp; optional hexdocs / postgres / mempalace / blender MCP |
 | codex | `modules.codex.enable` | Codex CLI + `codex-acp` (pinned ahead of the pinned channels), `CODEX_HOME` scoped to the project, declarative plugin marketplaces and plugins, and managed hooks that skip Codex's trust review without touching the real `/etc` |
 | elixir | `modules.elixir.enable` | Elixir + Erlang (version options), Phoenix deps, optional Expert LSP |
 | flutter | `modules.flutter.enable` | Flutter SDK (v3_44, scoped HOME/XDG), `flutter run` auto-backgrounding shim, optional Playwright MCP + agent skills. Pair with `modules.android` for a device build. |
@@ -27,7 +27,7 @@ nothing until you flip the flags you want.
 | devenv_utils | *(always on)* | `dev` wrapper script + shell banner |
 
 **`packages.<system>`** — the custom packages, usable standalone:
-`claude-agent-acp`, `tidewave-cli`, `mempalace`, `open-design`.
+`claude-agent-acp`, `tidewave-cli`, `mempalace`, `blender-mcp`, `blender-with-mcp`, `open-design`.
 
 ## Use in a project
 

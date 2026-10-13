@@ -25,6 +25,22 @@
         "type": "github"
       }
     },
+    "blender-mcp": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1790673067,
+        "narHash": "sha256-7+v0AzVpDvDqddnDdCObQRirUpo6gF6aMiUFCsyrW3E=",
+        "ref": "refs/heads/main",
+        "rev": "dbbf836ad4b1025f14a2b3b504c43903f39e0b04",
+        "revCount": 106,
+        "type": "git",
+        "url": "https://projects.blender.org/lab/blender_mcp.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://projects.blender.org/lab/blender_mcp.git"
+      }
+    },
     "expert": {
       "inputs": {
         "beam-flakes": "beam-flakes",
@@ -230,6 +246,7 @@
     },
     "root": {
       "inputs": {
+        "blender-mcp": "blender-mcp",
         "expert": "expert",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs_2",

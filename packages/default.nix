@@ -14,6 +14,12 @@ in {
 
   mempalace = pkgs-unstable.callPackage ./mempalace.nix {};
 
+  inherit
+    (pkgs.callPackage ./blender_mcp.nix {src = inputs.blender-mcp;})
+    blender-mcp
+    blender-with-mcp
+    ;
+
   open-design = openDesign.od;
   # daemon/web exposed so `nixupdate` can rebuild each with a fakeHash to
   # regenerate its pnpm-deps hash after an input bump.

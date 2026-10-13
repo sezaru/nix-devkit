@@ -45,6 +45,12 @@ with lib; let
 
     exec npx -y @modelcontextprotocol/server-postgres "$DATABASE_URL"
   '';
+
+  # Built with the project's pkgs so `blender.package` can be any Blender it has.
+  blender-mcp = pkgs.callPackage ../packages/blender_mcp.nix {
+    src = flakeInputs.blender-mcp;
+    blender = cfg.blender.package;
+  };
 in {
   imports = [
     ./node.nix
@@ -55,6 +61,17 @@ in {
       enable = mkEnableOption "Claude Code development";
       hexdocs.enable = mkEnableOption "Enable hexdocs MCP";
       mempalace.enable = mkEnableOption "Enable mempalace memory MCP";
+
+      blender = {
+        enable = mkEnableOption "Enable Blender MCP (`blender-mcp` + a `blender` that auto-loads its add-on)";
+
+        package = mkOption {
+          type = types.package;
+          default = pkgs.blender;
+          defaultText = literalExpression "pkgs.blender";
+          description = "Blender to wrap (>= 5.1, the add-on's minimum).";
+        };
+      };
 
       postgres = {
         enable = mkEnableOption "Enable postgres MCP";
@@ -103,7 +120,8 @@ in {
         # jq is used by the Claude PreToolUse log-guard hook (.claude/hooks).
         [claude-code pkgs.ast-grep pkgs.bubblewrap pkgs.jq customPackages.claude-agent-acp]
         ++ optionals cfg.postgres.enable [postgres-mcp]
-        ++ optionals cfg.mempalace.enable [customPackages.mempalace];
+        ++ optionals cfg.mempalace.enable [customPackages.mempalace]
+        ++ optionals cfg.blender.enable [blender-mcp.blender-mcp blender-mcp.blender-with-mcp];
 
       env.CLAUDE_CONFIG_DIR = claude_dir;
 
@@ -141,6 +159,11 @@ in {
       modules.node = {
         enable = mkForce true;
       };
+    })
+
+    # blender-mcp runs some tools in a headless `blender --background` of its own.
+    (mkIf cfg.blender.enable {
+      env.BLENDER_PATH = getExe blender-mcp.blender-with-mcp;
     })
   ]);
 }
