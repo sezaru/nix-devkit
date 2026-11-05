@@ -14,15 +14,6 @@ with lib; let
 
   customPackages = flakeInputs.self.packages.${pkgs.stdenv.system};
 
-  # Bump the Claude Code CLI ahead of nixpkgs so the `/model` picker offers the
-  # newest models (Fable 5.1 `claude-fable-5-1`, Opus 5.5 `claude-opus-5-5`),
-  # which the pinned nixpkgs version predates.
-  # Manifest = the upstream release manifest (version + per-platform checksums)
-  # from downloads.claude.ai; refresh packages/claude-code-manifest.json to bump.
-  claude-code = pkgs.claude-code.override {
-    manifest = lib.importJSON ../packages/claude-code-manifest.json;
-  };
-
   cfg = config.modules.claude;
 
   pg = cfg.postgres;
@@ -118,7 +109,7 @@ in {
     {
       packages =
         # jq is used by the Claude PreToolUse log-guard hook (.claude/hooks).
-        [claude-code pkgs.ast-grep pkgs.bubblewrap pkgs.jq customPackages.claude-agent-acp]
+        [pkgs.claude-code pkgs.ast-grep pkgs.bubblewrap pkgs.jq customPackages.claude-agent-acp]
         ++ optionals cfg.postgres.enable [postgres-mcp]
         ++ optionals cfg.mempalace.enable [customPackages.mempalace]
         ++ optionals cfg.blender.enable [blender-mcp.blender-mcp blender-mcp.blender-with-mcp];
@@ -139,11 +130,34 @@ in {
       # Only patches an existing file, so a fresh project seeds from the second
       # shell entry onward.
       enterShell = ''
+        mkdir -p "${claude_dir}"
+        cat > "${claude_dir}/settings.json" << 'EOF'
+{
+  "model": "claude-opus-5-5",
+  "bypassPermissionsModeAcceptDangerousMode": true,
+  "enabledPlugins": {
+    "ui-design@dev-ai-plugins": true,
+    "dev-workflow@dev-ai-plugins": true,
+    "coding-guidelines@dev-ai-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "dev-ai-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "Hexhound/dev-ai-plugins"
+      }
+    }
+  }
+}
+EOF
+
         if [ -f "${claude_dir}/.claude.json" ] && command -v jq >/dev/null 2>&1; then
           _tmp=$(mktemp)
           if jq '.additionalModelOptionsCache = ((.additionalModelOptionsCache // [])
                    | (if any(.value == "claude-fable-5[1m]") then . else . + [{"value":"claude-fable-5[1m]","label":"Fable 5","description":"Fable 5 · Most capable for your hardest and longest-running tasks"}] end)
-                   | (if any(.value == "claude-fable-5-1") then . else . + [{"value":"claude-fable-5-1","label":"Fable 5.1","description":"Fable 5.1 · Most capable for your hardest and longest-running tasks"}] end))' "${claude_dir}/.claude.json" > "$_tmp" 2>/dev/null; then
+                   | (if any(.value == "claude-fable-5-1") then . else . + [{"value":"claude-fable-5-1","label":"Fable 5.1","description":"Fable 5.1 · Most capable for your hardest and longest-running tasks"}] end)
+                   | (if any(.value == "claude-opus-4-8") then . else . + [{"value":"claude-opus-4-8","label":"Opus 4.8","description":"Opus 4.8 · Most capable and intelligent model"}] end)
+                   | (if any(.value == "claude-opus-5-5") then . else . + [{"value":"claude-opus-5-5","label":"Opus 5.5","description":"Opus 5.5 · Most capable and intelligent model"}] end))' "${claude_dir}/.claude.json" > "$_tmp" 2>/dev/null; then
             mv "$_tmp" "${claude_dir}/.claude.json"
           else
             rm -f "$_tmp"
