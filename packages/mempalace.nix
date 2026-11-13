@@ -6,8 +6,8 @@
   runCommand,
   ...
 }: let
-  version = "3.4.0";
-  rev = "939a076baf0b349e1f5b3a7e27ad1d545364f18b";
+  version = "3.12.0";
+  rev = "4df7b830ff1398332d4118884520a24f1aab9cc1";
 
   mempalace = python3Packages.buildPythonPackage {
     pname = "mempalace";
@@ -18,7 +18,7 @@
       owner = "MemPalace";
       repo = "mempalace";
       inherit rev;
-      hash = "sha256-lu8gUEanlY2BeieZc9gnBMeh6j7D4p2t/A7Dd6Zkg0U=";
+      hash = "sha256-WY2OcU/gpJHNOYcA3A1uILTyELL0yUY5PuCbGh11Ask=";
     };
 
     nativeBuildInputs = [python3Packages.pythonRelaxDepsHook];

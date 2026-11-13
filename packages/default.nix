@@ -8,6 +8,16 @@
 in {
   inherit claude-agent-acp;
 
+  # The Claude Code CLI, pinned here rather than taken from each project's
+  # nixpkgs: new models need a CLI that knows their ids, and projects lock
+  # nixpkgs at different dates. claude-code-manifest.json is the upstream
+  # release manifest (manifest.zst.json: version + per-platform checksums of
+  # the zstd-compressed binaries, which this nixpkgs' package unpacks);
+  # `nixupdate claude-code` refreshes it to the latest release.
+  claude-code = pkgs.claude-code.override {
+    manifest = pkgs.lib.importJSON ./claude-code-manifest.json;
+  };
+
   tidewave-cli = pkgs.callPackage ./tidewave_cli.nix {
     inherit claude-agent-acp;
   };

@@ -6,8 +6,9 @@
 #   nixupdate            # update all automatable pkgs, bump inputs, regen open-design hashes
 #   nixupdate <pkg>...   # update just those, skip the flake bump
 #                        #   nixupdate open-design  → just regenerate its pnpm-deps hashes
+#                        #   nixupdate claude-code  → just fetch the latest release manifest
 {pkgs, ...}: {
-  packages = [pkgs.nix-update];
+  packages = [pkgs.nix-update pkgs.curl pkgs.jq];
 
   scripts.nixupdate.exec = ''
     set -euo pipefail
@@ -46,6 +47,20 @@
       done
     }
 
+    # claude-code is nixpkgs' package fed our own copy of the upstream release
+    # manifest (packages/claude-code-manifest.json). Upstream publishes the
+    # newest version at .../latest and its manifest.zst.json next to it.
+    update_claude_code() {
+      local base="https://downloads.claude.ai/claude-code-releases"
+      local file=packages/claude-code-manifest.json
+      local version
+      version="$(curl -fsSL "$base/latest")"
+      curl -fsSL "$base/$version/manifest.zst.json" --output "$file.part"
+      jq -e --arg v "$version" '.version == $v' "$file.part" >/dev/null
+      mv "$file.part" "$file"
+      echo "    claude-code -> $version"
+    }
+
     # Custom packages that follow GitHub release tags — nix-update finds the
     # newest release and rewrites version + src hash (+ cargoHash/npmDepsHash).
     release_pkgs=(claude-agent-acp tidewave-cli)
@@ -69,12 +84,17 @@
         if [ "$p" = "open-design" ]; then
           echo ">>> open-design (regenerate pnpm-deps hashes)"
           regen_open_design_hashes
+        elif [ "$p" = "claude-code" ]; then
+          echo ">>> claude-code (latest release manifest)"
+          update_claude_code
         else
           echo ">>> $p"
           nix-update --flake "$p"
         fi
       done
     else
+      echo ">>> claude-code (latest release manifest)"
+      update_claude_code
       for p in "''${release_pkgs[@]}"; do echo ">>> $p (latest release)"; nix-update --flake "$p"; done
 
       echo "==> nix flake update"

@@ -109,7 +109,7 @@ in {
     {
       packages =
         # jq is used by the Claude PreToolUse log-guard hook (.claude/hooks).
-        [pkgs.claude-code pkgs.ast-grep pkgs.bubblewrap pkgs.jq customPackages.claude-agent-acp]
+        [customPackages.claude-code pkgs.ast-grep pkgs.bubblewrap pkgs.jq customPackages.claude-agent-acp]
         ++ optionals cfg.postgres.enable [postgres-mcp]
         ++ optionals cfg.mempalace.enable [customPackages.mempalace]
         ++ optionals cfg.blender.enable [blender-mcp.blender-mcp blender-mcp.blender-with-mcp];
@@ -125,7 +125,7 @@ in {
       # Seed the entries ourselves. Idempotent, and the cache is sticky (Claude's
       # fetch never clears it). The `value` is what the picker keys on and must be
       # a model id the running binary knows: Fable 5.1 (claude-fable-5-1) needs
-      # claude-code >= 2.1.250 (see the manifest override above) and a
+      # claude-code >= 2.1.250 (packages/default.nix pins it) and a
       # claude-agent-acp new enough to surface it.
       # Only patches an existing file, so a fresh project seeds from the second
       # shell entry onward.

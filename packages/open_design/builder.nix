@@ -73,6 +73,9 @@
       "pnpm-lock.yaml"
       "pnpm-workspace.yaml"
       "tsconfig.json"
+      # The web build type-checks apps/web/tests, and since 0.27 a test imports
+      # a scenario manifest from plugins/_official (HomeView.skill-with-chip).
+      "plugins"
     ]
     ++ webWorkspacePaths);
 

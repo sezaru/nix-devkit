@@ -8,6 +8,6 @@
   #
   # The daemon and web derivations build from different filtered source trees,
   # so each fetchPnpmDeps invocation needs its own fixed-output hash.
-  daemonHash = "sha256-savky4G+gZZzKa4vUmJ34f+bugqNRhiNEjZ8sRJd+e0=";
-  webHash = "sha256-k9vqAcDO6kv+QPu8sUTPHtu08BhEZq1xCzU1dIaXJPM=";
+  daemonHash = "sha256-FSKJTba5G3+FbMepYoU9MsNmpDCR4hMkCQfd7UWI4TI=";
+  webHash = "sha256-qoayRGTyRxdlzunMN/Feu0fCzkZRHgsK3w/EqShdhHs=";
 }
