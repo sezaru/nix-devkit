@@ -81,6 +81,7 @@
         ./modules/aws.nix
         ./modules/claude.nix
         ./modules/codex.nix
+        ./modules/dev_ai_plugins.nix
         ./modules/devenv_utils.nix
         ./modules/elixir.nix
         ./modules/flutter.nix
