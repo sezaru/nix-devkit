@@ -26,6 +26,11 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
+    # Projects take devenv from here (`devenv.follows = "devkit/devenv"`), so they
+    # all share one devenv-tasks build instead of each compiling its own. Tag-pinned so
+    # `nix flake update` leaves it alone; bump the tag deliberately.
+    devenv.url = "github:cachix/devenv/v2.4.0";
+
     expert.url = "github:elixir-lang/expert";
     # Source-only (flake = false): upstream retired its own flake.nix in #7644
     # (2026-08-31, "retire official Nix distribution"), so HEAD is no longer a
