@@ -37,6 +37,18 @@ with lib; let
     exec npx -y @modelcontextprotocol/server-postgres "$DATABASE_URL"
   '';
 
+  # Updates each plugin at the scope it was installed at; project scope resolves
+  # against the cwd, hence the cd.
+  refreshPlugins = pkgs.writeShellScript "claude-refresh-plugins" ''
+    export CLAUDE_CONFIG_DIR="$1"
+    cd "$2" || exit 1
+    claude=${customPackages.claude-code}/bin/claude
+    "$claude" plugin marketplace update dev-ai-plugins || exit 1
+    ${pkgs.jq}/bin/jq -r '.plugins | to_entries[] | select(.key | endswith("@dev-ai-plugins"))
+        | .key as $id | .value[] | "\($id) \(.scope)"' "$1/plugins/installed_plugins.json" |
+      while read -r id scope; do "$claude" plugin update "$id" --scope "$scope"; done
+  '';
+
   # Built with the project's pkgs so `blender.package` can be any Blender it has.
   blender-mcp = pkgs.callPackage ../packages/blender_mcp.nix {
     src = flakeInputs.blender-mcp;
@@ -174,6 +186,20 @@ EOF
         enable = mkForce true;
       };
     })
+
+    # Claude refreshes a third-party marketplace only from interactive sessions,
+    # never agent-shell's SDK ones, so each project's copy stayed at its first
+    # clone. Refresh it at most hourly, detached so shell entry never waits.
+    {
+      enterShell = ''
+        _stamp="${claude_dir}/plugins/.devkit-refreshed"
+        if [ -f "${claude_dir}/plugins/installed_plugins.json" ] && [ -z "$(find "$_stamp" -mmin -60 2>/dev/null)" ]; then
+          touch "$_stamp"
+          ${pkgs.util-linux}/bin/setsid -f ${refreshPlugins} "${claude_dir}" "${root_dir}" \
+            </dev/null >"${claude_dir}/plugins/.devkit-refresh.log" 2>&1
+        fi
+      '';
+    }
 
     # blender-mcp runs some tools in a headless `blender --background` of its own.
     (mkIf cfg.blender.enable {

@@ -42,6 +42,24 @@ with lib; let
     fi
   '';
 
+  # The sync above never runs again once stamped, and `marketplace upgrade` only
+  # refreshes catalogs: plugins are snapshots taken at `plugin add`, so re-add
+  # them. At most hourly, detached so shell entry never waits on the network.
+  refreshPlugins = let
+    script = pkgs.writeShellScript "codex-refresh-plugins" ''
+      export CODEX_HOME="$1"
+      ${cfg.package}/bin/codex plugin marketplace upgrade || exit 1
+      ${concatMapStringsSep "\n" (p: "${cfg.package}/bin/codex plugin add ${escapeShellArg p}") cfg.plugins}
+    '';
+  in ''
+    _refresh="${codex_dir}/.devkit-refreshed"
+    if [ -z "$(find "$_refresh" -mmin -60 2>/dev/null)" ]; then
+      touch "$_refresh"
+      ${pkgs.util-linux}/bin/setsid -f ${script} "${codex_dir}" \
+        </dev/null >"${codex_dir}/.devkit-refresh.log" 2>&1
+    fi
+  '';
+
   managedDir = "${codex_dir}/managed";
 
   stagingDir = "${codex_dir}/.managed-staging";
@@ -254,6 +272,7 @@ in {
         ln -sfn /etc/agents/AGENTS.md "${codex_dir}/AGENTS.md"
       fi
       ${optionalString (cfg.marketplaces != [] || cfg.plugins != []) syncPlugins}
+      ${optionalString (cfg.marketplaces != []) refreshPlugins}
       ${optionalString managedEnabled renderManaged}
     '';
   };

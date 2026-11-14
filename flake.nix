@@ -31,6 +31,10 @@
     # `nix flake update` leaves it alone; bump the tag deliberately.
     devenv.url = "github:cachix/devenv/v2.4.0";
 
+    # Same for the plugins' dependency bundles (`dev-ai-plugins.follows =
+    # "devkit/dev-ai-plugins"`), so a devkit bump moves every project together.
+    dev-ai-plugins.url = "github:Hexhound/dev-ai-plugins";
+
     expert.url = "github:elixir-lang/expert";
     # Source-only (flake = false): upstream retired its own flake.nix in #7644
     # (2026-08-31, "retire official Nix distribution"), so HEAD is no longer a
